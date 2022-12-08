@@ -14,7 +14,7 @@ SD works by encoding the text prompt as a matrix of dim (77, 768). I believe thi
 <img width="898" alt="SD pipeline" src="https://user-images.githubusercontent.com/22928303/201449782-32b41f2e-4853-4ddf-be99-ff4e3283cbcd.png">
 
 
-A first look showed that the data in the matrix are floats is in the range [?, ?]. 
+A first look showed that the data in the matrix are floats in the range [-28.0912, 33.0632]. 
 
 ### Test 1: Waveform representation
 
