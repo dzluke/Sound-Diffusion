@@ -1,3 +1,10 @@
+# How to run this code:
+
+## Dependencies:
+- ffmpeg
+- librosa
+- soundfile
+
 # Sound Diffusion: research journal
 
 SD = Stable Diffusion
