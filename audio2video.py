@@ -1,10 +1,10 @@
-import argparse
 from pathlib import Path
-import audio2img
 import librosa
 import generate
 import numpy as np
 from subprocess import run
+import time
+import util
 
 # perform audio2img for the first time step
 # args = ["--plms", "--feature", FEATURE, "--prompt", FIRST_TIME_STEP_AUDIO]
@@ -27,21 +27,9 @@ IMAGE_STORAGE_PATH = Path("./image_outputs")
 OUTPUT_VIDEO_PATH = Path("./output.mp4")
 
 
-def clear_dir(p):
-    """
-    Delete the contents of the directory at p
-    """
-    if not p.is_dir():
-        return
-    for f in p.iterdir():
-        if f.is_file():
-            f.unlink()
-        else:
-            clear_dir(f)
-
-
+tic = time.time()
 IMAGE_STORAGE_PATH.mkdir(exist_ok=True)
-clear_dir(IMAGE_STORAGE_PATH)
+util.clear_dir(IMAGE_STORAGE_PATH)
 
 encodings = []
 scale = 1
@@ -80,3 +68,6 @@ ffmpeg_command = ["ffmpeg",
                   "-pix_fmt", "yuv420p",
                   str(OUTPUT_VIDEO_PATH)]
 run(ffmpeg_command)
+
+print("Took", util.time_string(time.time() - tic))
+print("Done.")
