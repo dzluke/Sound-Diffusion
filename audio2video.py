@@ -1,4 +1,3 @@
-# from scripts.img2img import main
 import argparse
 from pathlib import Path
 import audio2img
@@ -6,18 +5,6 @@ import librosa
 import generate
 import numpy as np
 from subprocess import run
-
-FEATURE = "waveform"
-SAMPLING_RATE = 44100
-FRAME_RATE = 1
-ENCODING_DIMENSION = (77, 768)
-
-AUDIO_PATH = "/Users/luke/CNMAT/Heliosonos/samples/chords.wav"
-IMAGE_STORAGE_PATH = Path("./image_outputs")
-OUTPUT_VIDEO_PATH = Path("./output.mp4")
-
-
-IMAGE_STORAGE_PATH.mkdir(exist_ok=True)
 
 # perform audio2img for the first time step
 # args = ["--plms", "--feature", FEATURE, "--prompt", FIRST_TIME_STEP_AUDIO]
@@ -29,6 +16,32 @@ IMAGE_STORAGE_PATH.mkdir(exist_ok=True)
     # get the last image
     # create a new image using img2img, with the prompt being the current audio
 
+
+FEATURE = "waveform"
+SAMPLING_RATE = 44100
+FRAME_RATE = 1
+ENCODING_DIMENSION = (77, 768)
+
+AUDIO_PATH = "./audio/synth_chords.wav"
+IMAGE_STORAGE_PATH = Path("./image_outputs")
+OUTPUT_VIDEO_PATH = Path("./output.mp4")
+
+
+def clear_dir(p):
+    """
+    Delete the contents of the directory at p
+    """
+    if not p.is_dir():
+        return
+    for f in p.iterdir():
+        if f.is_file():
+            f.unlink()
+        else:
+            clear_dir(f)
+
+
+IMAGE_STORAGE_PATH.mkdir(exist_ok=True)
+clear_dir(IMAGE_STORAGE_PATH)
 
 encodings = []
 scale = 1
@@ -54,7 +67,7 @@ frames = np.array(frames)  # shape (num_frames,1,77,768)
 # interpolation = np.linspace(frames[0], frames[3], num=4)
 
 # generate images
-# generate.main(frames, IMAGE_STORAGE_PATH)
+generate.main(frames, IMAGE_STORAGE_PATH)
 
 # turn images into video
 ffmpeg_command = ["ffmpeg",
