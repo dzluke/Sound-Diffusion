@@ -19,7 +19,7 @@ import util
 
 FEATURE = "waveform"
 SAMPLING_RATE = 44100
-FRAME_RATE = 1
+FRAME_RATE = 2
 ENCODING_DIMENSION = (77, 768)
 
 AUDIO_PATH = "./audio/synth_chords.wav"
@@ -36,16 +36,16 @@ scale = 1
 # stft makes an np array of size (1 + n_fft / 2, 1 + audio.size // hop_length)
 y, _ = librosa.load(AUDIO_PATH, sr=SAMPLING_RATE)
 audio_length = y.size // SAMPLING_RATE
-num_frames = audio_length // FRAME_RATE
+num_frames = audio_length * FRAME_RATE
 n_fft = (ENCODING_DIMENSION[1] - 1) * 2  # 768 - 1 * 2 = 1534
-hop_length = y.size // (ENCODING_DIMENSION[0] * num_frames) + 1
+hop_length = y.size // (ENCODING_DIMENSION[0] * num_frames) - 1
 
 stft = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
 stft = np.abs(stft)  # TODO: is it ok to throw out the phase data?
 stft *= scale
 frames = []
 for i in range(num_frames):
-    frame = stft[:, i * ENCODING_DIMENSION[0]:(i + 1) * ENCODING_DIMENSION[0]]
+    frame = stft[:, i * ENCODING_DIMENSION[0] : (i + 1) * ENCODING_DIMENSION[0]]
     frames.append(frame)
 
 frames = [np.array([f.T]) for f in frames]  # transpose and add a dimension to have shape (1,77,768)
