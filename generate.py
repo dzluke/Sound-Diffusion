@@ -243,7 +243,7 @@ def main(encodings, outpath, titles=None):
         choices=["full", "autocast"],
         default="autocast"
     )
-    opt = parser.parse_args()
+    opt = parser.parse_args([])
 
     if opt.laion400m:
         print("Falling back to LAION 400M model...")

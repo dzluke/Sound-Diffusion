@@ -5,6 +5,7 @@ import numpy as np
 from subprocess import run
 import time
 import util
+import argparse
 
 # perform audio2img for the first time step
 # args = ["--plms", "--feature", FEATURE, "--prompt", FIRST_TIME_STEP_AUDIO]
@@ -16,15 +17,30 @@ import util
     # get the last image
     # create a new image using img2img, with the prompt being the current audio
 
-
 FEATURE = "waveform"
 SAMPLING_RATE = 44100
-FRAME_RATE = 2
 ENCODING_DIMENSION = (77, 768)
 
-AUDIO_PATH = "./audio/synth_chords.wav"
 IMAGE_STORAGE_PATH = Path("./image_outputs")
 OUTPUT_VIDEO_PATH = Path("./output.mp4")
+
+arg_parser = argparse.ArgumentParser()
+arg_parser.add_argument(
+    "--path",
+    type=str,
+    help="path to the audio to visualize",
+    required=True
+)
+arg_parser.add_argument(
+    "--fps",
+    type=int,
+    help="frames per second",
+    required=True
+)
+
+args = arg_parser.parse_args()
+FRAME_RATE = args.fps
+AUDIO_PATH = args.path
 
 
 tic = time.time()
@@ -55,6 +71,7 @@ frames = np.array(frames)  # shape (num_frames,1,77,768)
 # interpolation = np.linspace(frames[0], frames[3], num=4)
 
 # generate images
+print(">>> Generating {} images".format(num_frames))
 generate.main(frames, IMAGE_STORAGE_PATH)
 
 # turn images into video
@@ -69,5 +86,5 @@ ffmpeg_command = ["ffmpeg",
                   str(OUTPUT_VIDEO_PATH)]
 run(ffmpeg_command)
 
-print("Took", util.time_string(time.time() - tic))
+print(">>> Took", util.time_string(time.time() - tic))
 print("Done.")
