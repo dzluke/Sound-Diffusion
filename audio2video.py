@@ -18,6 +18,7 @@ import argparse
     # create a new image using img2img, with the prompt being the current audio
 
 FEATURE = "waveform"
+IMG2IMG = True  # use img2img to condition each generation on previous image
 SAMPLING_RATE = 44100
 ENCODING_DIMENSION = (77, 768)
 
@@ -72,7 +73,17 @@ frames = np.array(frames)  # shape (num_frames,1,77,768)
 
 # generate images
 print(">>> Generating {} images".format(num_frames))
-generate.main(frames, IMAGE_STORAGE_PATH)
+if IMG2IMG:
+    # generate the first frame using text2img
+    generate.text2img(np.array([frames[0]]), IMAGE_STORAGE_PATH)
+    # for the rest of the images, each one is the previous image conditioned on the current prompt
+    for i in range(1, num_frames):
+        prompt = frames[i]
+        init_img_path = IMAGE_STORAGE_PATH / f"{(i - 1):05}.png"  # the init image is the last created image
+        generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH)
+else:
+    # generate only using text2img
+    generate.text2img(frames, IMAGE_STORAGE_PATH)
 
 # turn images into video
 ffmpeg_command = ["ffmpeg",
