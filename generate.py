@@ -369,7 +369,7 @@ def text2img(encodings, outpath, titles=None):
           f" \nEnjoy.")
 
 
-def img2img(prompts, init_img, outpath):
+def img2img(prompts, init_img, outpath, strength):
     """
     Generate an image using img2img
     prompts: 4 dim np array of shape (N, 1, 77, 768)
@@ -531,8 +531,8 @@ def img2img(prompts, init_img, outpath):
 
     sampler.make_schedule(ddim_num_steps=opt.ddim_steps, ddim_eta=opt.ddim_eta, verbose=False)
 
-    assert 0. <= opt.strength <= 1., 'can only work with strength in [0.0, 1.0]'
-    t_enc = int(opt.strength * opt.ddim_steps)
+    assert 0. <= strength <= 1., 'can only work with strength in [0.0, 1.0]'
+    t_enc = int(strength * opt.ddim_steps)
     print(f"target t_enc is {t_enc} steps")
 
     # put encodings on device

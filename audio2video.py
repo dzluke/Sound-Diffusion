@@ -38,6 +38,13 @@ arg_parser.add_argument(
     help="frames per second",
     required=True
 )
+arg_parser.add_argument(
+        "--strength",
+        type=float,
+        default=0.5,
+        help="for img2img: strength for noising/unnoising. "
+             "1.0 corresponds to full destruction of information in init image",
+    )
 
 args = arg_parser.parse_args()
 FRAME_RATE = args.fps
@@ -74,14 +81,16 @@ frames = np.array(frames)  # shape (num_frames,1,77,768)
 # generate images
 print(">>> Generating {} images".format(num_frames))
 if IMG2IMG:
+    print(">>> Using img2img")
     # generate the first frame using text2img
     generate.text2img(np.array([frames[0]]), IMAGE_STORAGE_PATH)
     # for the rest of the images, each one is the previous image conditioned on the current prompt
     for i in range(1, num_frames):
         prompt = frames[i]
-        init_img_path = IMAGE_STORAGE_PATH / f"{(i - 1):05}.png"  # the init image is the last created image
-        generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH)
+        init_img_path = IMAGE_STORAGE_PATH / f"{(i - 1):05}.png"  # use the previous image
+        generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, args.strength)
 else:
+    print(">>> Using text2img")
     # generate only using text2img
     generate.text2img(frames, IMAGE_STORAGE_PATH)
 
@@ -97,5 +106,6 @@ ffmpeg_command = ["ffmpeg",
                   str(OUTPUT_VIDEO_PATH)]
 run(ffmpeg_command)
 
+print(">>> Generated {} images".format(num_frames))
 print(">>> Took", util.time_string(time.time() - tic))
 print("Done.")
