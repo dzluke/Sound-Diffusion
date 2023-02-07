@@ -110,6 +110,7 @@ full destruction of information in init image."
 - prompt interpolation: SD generates frames that are interpolations between two points in time. Linear interpolation is done with np.linspace or similar
 - The amplitude of the sound affects the encoding/prompt
 - Scale the encodings/prompts to the range that SD expects
+- User can provide init image
 
 ## Reference / Examples:
 
