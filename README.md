@@ -98,11 +98,13 @@ full destruction of information in init image."
 - prompt interpolation: SD generates frames that are interpolations between two points in time. Linear interpolation is done with np.linspace or similar.
 For this to work, there must be same space in between successive STFT slices where the interpolation can happen. How do you do this without leaving out
 some audio data?
-- have some overlap between successive frames, so some of the STFT data from frame `i` is included in frame `i+1`
+- have some overlap between successive frames, so some of the STFT data from frame `i` is included in frame `i+1`.
+This actually won't perform as expected because it just changes the beginning of the encoding
 - The amplitude of the sound affects the encoding/prompt
 - Scale the encodings/prompts to the range that SD expects
 - User can provide init image
 - How does setting a seed value (or not) affect the images?
+- What if the input is a combination of a text prompt and audio data? Sum the encodings?
 
 
 Resources for prompt interpolation:

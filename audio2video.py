@@ -6,6 +6,7 @@ from subprocess import run
 import time
 import util
 import argparse
+from PIL import Image
 
 # perform audio2img for the first time step
 # args = ["--plms", "--feature", FEATURE, "--prompt", FIRST_TIME_STEP_AUDIO]
@@ -19,6 +20,8 @@ import argparse
 
 FEATURE = "waveform"
 IMG2IMG = True  # use img2img to condition each generation on previous image
+INIT_IMG = Path("/Users/luke/CNMAT/Visuals/images/DALL·E 2023-02-09 11.43.50 - a human at the center of the universe, digital art, epic.png")
+INIT_PROMPT = None
 SAMPLING_RATE = 44100
 ENCODING_DIMENSION = (77, 768)
 
@@ -82,8 +85,19 @@ frames = np.array(frames)  # shape (num_frames,1,77,768)
 print(">>> Generating {} images".format(num_frames))
 if IMG2IMG:
     print(">>> Using img2img")
-    # generate the first frame using text2img
-    generate.text2img(np.array([frames[0]]), IMAGE_STORAGE_PATH)
+    if INIT_IMG is not None:
+        # first frame is provided image
+        img = Image.open(INIT_IMG)
+        img = img.resize((512, 512))
+        save_path = IMAGE_STORAGE_PATH / f"{0:05}.png"
+        img.save(save_path)
+    elif INIT_PROMPT is not None:
+        # generate the first frame using text2img with text as prompt
+        pass
+    else:
+        # generate the first frame using text2img with audio as prompt
+        generate.text2img(np.array([frames[0]]), IMAGE_STORAGE_PATH)
+
     # for the rest of the images, each one is the previous image conditioned on the current prompt
     for i in range(1, num_frames):
         prompt = frames[i]
