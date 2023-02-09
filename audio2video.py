@@ -8,19 +8,9 @@ import util
 import argparse
 from PIL import Image
 
-# perform audio2img for the first time step
-# args = ["--plms", "--feature", FEATURE, "--prompt", FIRST_TIME_STEP_AUDIO]
-# audio2img.main(args.join(" "))
-# todo get path from call to audio2img
-# perform img2img, conditioned on the next step of audio
-# for _ in []: # for each time step of audio
-#     pass
-    # get the last image
-    # create a new image using img2img, with the prompt being the current audio
 
 FEATURE = "waveform"
 IMG2IMG = True  # use img2img to condition each generation on previous image
-INIT_IMG = Path("/Users/luke/CNMAT/Visuals/images/DALL·E 2023-02-09 11.43.50 - a human at the center of the universe, digital art, epic.png")
 INIT_PROMPT = None
 SAMPLING_RATE = 44100
 ENCODING_DIMENSION = (77, 768)
@@ -42,16 +32,23 @@ arg_parser.add_argument(
     required=True
 )
 arg_parser.add_argument(
-        "--strength",
-        type=float,
-        default=0.5,
-        help="for img2img: strength for noising/unnoising. "
-             "1.0 corresponds to full destruction of information in init image",
-    )
+    "--strength",
+    type=float,
+    default=0.5,
+    help="for img2img: strength for noising/unnoising. "
+         "1.0 corresponds to full destruction of information in init image"
+)
+arg_parser.add_argument(
+    "--init-img",
+    type=str,
+    nargs="?",
+    help="path to the input image"
+)
 
 args = arg_parser.parse_args()
 FRAME_RATE = args.fps
 AUDIO_PATH = args.path
+INIT_IMG = args.init_img
 
 
 tic = time.time()
