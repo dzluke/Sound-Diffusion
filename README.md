@@ -8,11 +8,11 @@
 The following steps are taken from https://replicate.com/blog/run-stable-diffusion-on-m1-mac
 
 1. Install Python 3.10 or above
-2. Clone this repository
+2. Clone this repository (https://github.com/dzluke/Sound-Diffusion)
 3. Setup and activate a virtual environment
 ```
 python3 -m pip install virtualenv
-python3 -m virtualenv venv`
+python3 -m virtualenv venv
 source venv/bin/activate
 ```
 4. Install dependencies: `pip install -r requirements.txt`
