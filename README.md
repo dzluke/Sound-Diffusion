@@ -2,9 +2,34 @@
 
 ## Dependencies:
 - ffmpeg
-- librosa
-- soundfile
 
+## Instructions for M1 Mac
+
+The following steps are taken from https://replicate.com/blog/run-stable-diffusion-on-m1-mac
+
+1. Install Python 3.10 or above
+2. Clone this repository
+3. Setup and activate a virtual environment
+```
+python3 -m pip install virtualenv
+python3 -m virtualenv venv`
+source venv/bin/activate
+```
+4. Install dependencies: `pip install -r requirements.txt`
+
+If you're seeing errors like `Failed building wheel for onnx` you might need to install these packages: 
+`brew install Cmake protobuf rust`
+
+5. Download pre-trained model at https://huggingface.co/CompVis/stable-diffusion-v-1-4-original
+   - Download `sd-v1-4.ckpt` (~4 GB) on that page. Create a new folder `models/ldm/stable-diffusion-v1` and save the
+   model you downloaded as `models/ldm/stable-diffusion-v1/model.ckpt`
+6. Test that it works by running: 
+```
+python scripts/txt2img.py \
+  --prompt "a red juicy apple floating in outer space, like a planet" \
+  --n_samples 1 --n_iter 1 --plms
+ ```
+The generated image will be saved to `outputs/txt2img-samples` .
 # Sound Diffusion: research journal
 
 SD = Stable Diffusion
