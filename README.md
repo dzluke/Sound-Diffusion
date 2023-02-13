@@ -1,4 +1,4 @@
-# How to run this code:
+# Installation instructions:
 
 ## Dependencies:
 - ffmpeg
@@ -7,12 +7,12 @@
 
 The following steps are taken from https://replicate.com/blog/run-stable-diffusion-on-m1-mac
 
-1. Install Python 3.10 or above
+1. Install Python 3.10 or above and [FFmpeg](https://ffmpeg.org/)
 2. Clone this repository (https://github.com/dzluke/Sound-Diffusion)
 3. Setup and activate a virtual environment
 ```
-python3 -m pip install virtualenv
-python3 -m virtualenv venv
+pip install virtualenv
+virtualenv venv
 source venv/bin/activate
 ```
 4. Install dependencies: `pip install -r requirements.txt`
@@ -30,6 +30,25 @@ python scripts/txt2img.py \
   --n_samples 1 --n_iter 1 --plms
  ```
 The generated image will be saved to `outputs/txt2img-samples` .
+
+# Running the code:
+
+To perform Audio-to-Video, use the script `audio2video.py`. It can be run in the following way:
+
+`python audio2video.py --path PATH --fps FRAMES_PER_SECOND --strength STRENGTH` 
+
+arguments:
+
+`PATH`: path to audio that will be visualized (string)
+
+`FRAMES_PER_SECOND`: the frames per second of the resulting video (int). This determines the number of images that are
+generated
+
+`STRENGTH`: a float between 0 and 1 that determines the weight of the previous image compared to the
+weight of the current prompt. A value of `1.0` "corresponds to full destruction of information in init image."
+Suggested values: between `0.2` and `0.7`.
+
+
 # Sound Diffusion: research journal
 
 SD = Stable Diffusion
