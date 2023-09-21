@@ -33,6 +33,10 @@ The generated image will be saved to `outputs/txt2img-samples` .
 
 # Running the code:
 
+To peform Audio-to-Image, use the script `audio2img.py`. It can be run in the following way:
+
+`python audio2img.py --prompt PATH --feature waveform|fft`
+
 To perform Audio-to-Video, use the script `audio2video.py`. It can be run in the following way:
 
 `python audio2video.py --path PATH --fps FRAMES_PER_SECOND --strength STRENGTH` 
