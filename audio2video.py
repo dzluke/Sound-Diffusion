@@ -44,12 +44,18 @@ arg_parser.add_argument(
     nargs="?",
     help="path to the input image"
 )
+arg_parser.add_argument(
+        "--ckpt",
+        type=str,
+        default="models/ldm/stable-diffusion-v1/model.ckpt",
+        help="path to checkpoint of model",
+    )
 
 args = arg_parser.parse_args()
 FRAME_RATE = args.fps
 AUDIO_PATH = args.path
 INIT_IMG = args.init_img
-
+MODEL_CKPT = args.ckpt
 
 tic = time.time()
 IMAGE_STORAGE_PATH.mkdir(exist_ok=True)
@@ -93,13 +99,13 @@ if IMG2IMG:
         pass
     else:
         # generate the first frame using text2img with audio as prompt
-        generate.text2img(np.array([frames[0]]), IMAGE_STORAGE_PATH)
+        generate.text2img(np.array([frames[0]]), IMAGE_STORAGE_PATH, MODEL_CKPT)
 
     # for the rest of the images, each one is the previous image conditioned on the current prompt
     for i in range(1, num_frames):
         prompt = frames[i]
         init_img_path = IMAGE_STORAGE_PATH / f"{(i - 1):05}.png"  # use the previous image
-        generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, args.strength)
+        generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, args.strength, MODEL_CKPT)
 else:
     print(">>> Using text2img")
     # generate only using text2img

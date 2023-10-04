@@ -109,7 +109,7 @@ def load_img(path):
     return 2.*image - 1.
 
 
-def text2img(encodings, outpath, titles=None):
+def text2img(encodings, outpath, titles=None, model_ckpt):
     """
     @param encodings: a vector of encodings, which will be input to the model. shape (n,1,77,768)
     @param outpath: Path object that points to the folder to save images to
@@ -258,7 +258,7 @@ def text2img(encodings, outpath, titles=None):
     seed_everything(opt.seed)
 
     config = OmegaConf.load(f"{opt.config}")
-    model = load_model_from_config(config, f"{opt.ckpt}")
+    model = load_model_from_config(config, f"{model_ckpt}")
 
     device = torch.device(get_device())
     model = model.to(device)
@@ -369,12 +369,12 @@ def text2img(encodings, outpath, titles=None):
           f" \nEnjoy.")
 
 
-def img2img(prompts, init_img, outpath, strength):
+def img2img(prompts, init_img, outpath, strength, model_ckpt):
     """
     Generate an image using img2img
     prompts: 4 dim np array of shape (N, 1, 77, 768)
     init_img: path to image
-    outpuath: path to save to (type: str)
+    outpath: path to save to (type: str)
     """
     parser = argparse.ArgumentParser()
 
@@ -508,7 +508,7 @@ def img2img(prompts, init_img, outpath, strength):
     seed_everything(opt.seed)
 
     config = OmegaConf.load(f"{opt.config}")
-    model = load_model_from_config(config, f"{opt.ckpt}")
+    model = load_model_from_config(config, f"{model_ckpt}")
 
     device = torch.device(get_device())
     model = model.to(device)
