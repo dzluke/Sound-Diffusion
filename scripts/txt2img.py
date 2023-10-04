@@ -235,7 +235,8 @@ def main():
         type=str,
         help="evaluate at this precision",
         choices=["full", "autocast"],
-        default="autocast"
+        # default="autocast"
+        default="full"
     )
     opt = parser.parse_args()
 
