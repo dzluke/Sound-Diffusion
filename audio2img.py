@@ -255,7 +255,8 @@ def main(args=None):
         type=str,
         help="evaluate at this precision",
         choices=["full", "autocast"],
-        default="autocast"
+        # default="autocast"
+        default="full"
     )
 
     # if 'args' was not passed to this function, read from sys.argv, else read from the provided string 'args'
@@ -346,6 +347,7 @@ def main(args=None):
 
         c = torch.from_numpy(c).to(device)
         data.append(c)
+        # print(c)
 
     start_code = None
     if opt.fixed_code:
