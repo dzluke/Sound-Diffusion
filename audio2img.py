@@ -257,7 +257,14 @@ def main(args=None):
         choices=["full", "autocast"],
         default="autocast"
     )
-
+    # Add the text prompt
+    parser.add_argument(
+        "--textprompt",
+        type=str,
+        help="Create a text prompt",
+        nargs="?",
+        default=""
+    )
     # if 'args' was not passed to this function, read from sys.argv, else read from the provided string 'args'
     if args is None:
         opt = parser.parse_args()
@@ -364,7 +371,11 @@ def main(args=None):
                 for n in trange(opt.n_iter, desc="Sampling"):
                     for i in range(len(data)):
                         save_path = save_paths[i]
-                        c = data[i]
+                        
+                        # textdata = torch.empty((1, 77, 768)).to(device)
+                        # Add the text prompt to the data
+                        textdata = model.get_learned_conditioning(opt.textprompt)
+                        c = data[i] + textdata
 
                         uc = None
                         if opt.scale != 1.0:
