@@ -120,7 +120,7 @@ def main(args=None):
     parser.add_argument(
         "--feature",
         type=str,
-        help="how to embed the audio in feature space; options: 'waveform', 'fft'"
+        help="how to embed the audio in feature space; options: 'waveform', 'fft', 'melspectrogram'"
     )
     parser.add_argument(
         "--input_folder",
@@ -348,8 +348,18 @@ def main(args=None):
             stft = np.abs(stft)  # TODO: is it ok to throw out the phase data?
             stft *= scale
             c = np.array([stft.T])  # transpose and add a dimension to have shape (1,77,768)
+        elif opt.feature == 'melspectrogram':
+            scale = 1
+            mel = librosa.feature.melspectrogram(y=y, sr=SAMPLING_RATE, n_mels=128, fmax=8000)  # adjust parameters accordingly
+            mel_db = librosa.power_to_db(mel, ref=np.max)
+            mel_db = (mel_db + 80) / 80  # normalize to [0,1]; -80dB is a common threshold for silence in audio
+            mel_db *= scale
+
+            # Resize mel_db to fit the desired shape:
+            c = np.resize(mel_db, (1, 77, 768))
+
         else:
-            raise NotImplementedError("Only 'waveform' and 'fft' are implemented features")
+            raise NotImplementedError("Only 'waveform', 'fft', and 'melspectrogram' are implemented features")
 
         c = torch.from_numpy(c).to(device)
         data.append(c)
