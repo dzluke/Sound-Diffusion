@@ -180,7 +180,13 @@ def text2img(encodings, outpath, opt, titles=None):
                 all_samples = list()
                 for n in trange(opt.n_iter, desc="Sampling"):
                     for i in range(encodings.shape[0]):  # for each encoding provided, generate an image
-                        c = encodings[i]
+                        # Add the text prompt to the data, scaling to --textstrength
+                        textdata = model.get_learned_conditioning(opt.textprompt)
+                        textdata = torch.mul(textdata, opt.textstrength)
+                        print("AAAAAAAAAAAAAAAAA")
+                        print("textdata: " + opt.textprompt)
+
+                        c = encodings[i] + textdata
                         uc = None
                         if opt.scale != 1.0:
                             uc = model.get_learned_conditioning(batch_size * [""])
@@ -288,7 +294,12 @@ def img2img(prompts, init_img, outpath, opt):
                 tic = time.time()
                 for n in trange(opt.n_iter, desc="Sampling"):
                     for i in range(prompts.shape[0]):
-                        c = prompts[i]
+                        textdata = model.get_learned_conditioning(opt.textprompt)
+                        textdata = torch.mul(textdata, opt.textstrength)
+                        print("AAAAAAAAAAAAAAAAA")
+                        print("textdata: " + opt.textprompt)
+                        c = prompts[i] + textdata   
+                        
                         uc = None
                         if opt.scale != 1.0:
                             uc = model.get_learned_conditioning(batch_size * [""])
@@ -297,7 +308,7 @@ def img2img(prompts, init_img, outpath, opt):
                         z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc] * batch_size).to(device))
                         # decode it
                         samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=opt.scale,
-                                                 unconditional_conditioning=uc, )
+                                                 unconditional_conditioning=uc,)
 
                         x_samples = model.decode_first_stage(samples)
                         x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)

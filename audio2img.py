@@ -257,13 +257,19 @@ def main(args=None):
         choices=["full", "autocast"],
         default="autocast"
     )
-    # Add the text prompt
+    # Add the text prompt and strength
     parser.add_argument(
         "--textprompt",
         type=str,
         help="Create a text prompt",
         nargs="?",
         default=""
+    )
+    parser.add_argument(
+        "--textstrength",
+        type=float,
+        help="determine the strength of the text prompt",
+        default=1
     )
     # if 'args' was not passed to this function, read from sys.argv, else read from the provided string 'args'
     if args is None:
@@ -382,9 +388,11 @@ def main(args=None):
                     for i in range(len(data)):
                         save_path = save_paths[i]
                         
-                        # textdata = torch.empty((1, 77, 768)).to(device)
-                        # Add the text prompt to the data
+
+                        # Add the text prompt to the data, scaling to --textstrength
                         textdata = model.get_learned_conditioning(opt.textprompt)
+                        textdata = torch.mul(textdata, opt.textstrength)
+                        print("textdata: ", opt.textprompt)
                         c = data[i] + textdata
 
                         uc = None

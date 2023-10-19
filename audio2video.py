@@ -184,6 +184,20 @@ parser.add_argument(
     nargs="?",
     help="path to the input image"
 )
+# Add the text prompt
+parser.add_argument(
+    "--textprompt",
+    type=str,
+    help="Create a text prompt",
+    nargs="?",
+    default=""
+)
+parser.add_argument(
+    "--textstrength",
+    type=float,
+    help="determine the strength of the text prompt",
+    default=1.0
+)
 args = parser.parse_args()
 FRAME_RATE = args.fps
 AUDIO_PATH = args.path
@@ -198,21 +212,56 @@ encodings = []
 scale = 1
 # stft makes an np array of size (1 + n_fft / 2, 1 + audio.size // hop_length)
 y, _ = librosa.load(AUDIO_PATH, sr=SAMPLING_RATE)
+splitfiles = []
+frames = []
 audio_length = y.size // SAMPLING_RATE
 num_frames = audio_length * FRAME_RATE
-n_fft = (ENCODING_DIMENSION[1] - 1) * 2  # 768 - 1 * 2 = 1534
-hop_length = y.size // (ENCODING_DIMENSION[0] * num_frames) - 1
-
-stft = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
-stft = np.abs(stft)  # TODO: is it ok to throw out the phase data?
-stft *= scale
-frames = []
 for i in range(num_frames):
-    frame = stft[:, i * ENCODING_DIMENSION[0] : (i + 1) * ENCODING_DIMENSION[0]]
-    frames.append(frame)
+    splitfiles.append(y[i * SAMPLING_RATE // FRAME_RATE: (i + 1) * SAMPLING_RATE // FRAME_RATE])
 
-frames = [np.array([f.T]) for f in frames]  # transpose and add a dimension to have shape (1,77,768)
-frames = np.array(frames)  # shape (num_frames,1,77,768)
+for y in splitfiles:
+    if args.feature == 'waveform':
+        scale = 1
+        y = librosa.util.fix_length(y, size=77 * 768)
+        # convert audio to feature space
+        c = np.resize(y, (1, 77, 768))
+        c *= scale
+    elif args.feature == 'fft':
+        scale = 1
+        # stft makes an np array of size (1 + n_fft / 2, 1 + audio.size // hop_length)
+        n_fft = 1534
+        hop_length = y.size // 77 + 1
+        stft = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
+        stft = np.abs(stft)  # TODO: is it ok to throw out the phase data?
+        stft *= scale
+        c = np.array([stft.T])  # transpose and add a dimension to have shape (1,77,768)
+    elif args.feature == 'melspectrogram':
+        scale = 1
+        mel = librosa.feature.melspectrogram(y=y, sr=SAMPLING_RATE, n_mels=128, fmax=8000)  # adjust parameters accordingly
+        mel_db = librosa.power_to_db(mel, ref=np.max)
+        mel_db = (mel_db + 80) / 80  # normalize to [0,1]; -80dB is a common threshold for silence in audio
+        mel_db *= scale
+        # Resize mel_db to fit the desired shape:
+        c = np.resize(mel_db, (1, 77, 768))
+    else:
+        raise NotImplementedError("Only 'waveform', 'fft', and 'melspectrogram' are implemented features")
+    frames.append(c)
+
+
+
+# n_fft = (ENCODING_DIMENSION[1] - 1) * 2  # 768 - 1 * 2 = 1534
+# hop_length = y.size // (ENCODING_DIMENSION[0] * num_frames) - 1
+
+# stft = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
+# stft = np.abs(stft)  # TODO: is it ok to throw out the phase data?
+# stft *= scale
+# frames = []
+# for i in range(num_frames):
+#     frame = stft[:, i * ENCODING_DIMENSION[0] : (i + 1) * ENCODING_DIMENSION[0]]
+#     frames.append(frame)
+
+# frames = [np.array([f.T]) for f in frames]  # transpose and add a dimension to have shape (1,77,768)
+# frames = np.array(frames)  # shape (num_frames,1,77,768)
 
 # interpolation between chords
 # interpolation = np.linspace(frames[0], frames[3], num=4)
