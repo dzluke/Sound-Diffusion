@@ -16,6 +16,8 @@ from contextlib import contextmanager, nullcontext
 import librosa
 import soundfile as sf
 from pathlib import Path
+from scipy.ndimage import zoom
+
 
 # sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -120,7 +122,7 @@ def main(args=None):
     parser.add_argument(
         "--feature",
         type=str,
-        help="how to embed the audio in feature space; options: 'waveform', 'fft', 'melspectrogram'"
+        help="how to embed the audio in feature space; options: 'waveform', 'fft', 'melspectrogram', 'mfcc'"
     )
     parser.add_argument(
         "--input_folder",
@@ -342,31 +344,35 @@ def main(args=None):
             scale = 1
             y = librosa.util.fix_length(y, size=77 * 768)
             sf.write(save_path / f"{audio_name}.wav", y, samplerate=SAMPLING_RATE)
-            # convert audio to feature space
             c = np.resize(y, (1, 77, 768))
             c *= scale
         elif opt.feature == 'fft':
             scale = 1
-            # stft makes an np array of size (1 + n_fft / 2, 1 + audio.size // hop_length)
             n_fft = 1534
             hop_length = y.size // 77 + 1
             stft = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
-            stft = np.abs(stft)  # TODO: is it ok to throw out the phase data?
+            stft = np.abs(stft)
             stft *= scale
-            c = np.array([stft.T])  # transpose and add a dimension to have shape (1,77,768)
+            zoom_factor = (77 / stft.shape[0], 768 / stft.shape[1])
+            c = np.array([zoom(stft, zoom_factor)])
         elif opt.feature == 'melspectrogram':
             scale = 1
-            mel = librosa.feature.melspectrogram(y=y, sr=SAMPLING_RATE, n_mels=128, fmax=8000)  # adjust parameters accordingly
+            mel = librosa.feature.melspectrogram(y=y, sr=SAMPLING_RATE, n_mels=128, fmax=8000)
             mel_db = librosa.power_to_db(mel, ref=np.max)
-            mel_db = (mel_db + 80) / 80  # normalize to [0,1]; -80dB is a common threshold for silence in audio
+            mel_db = (mel_db + 80) / 80
             mel_db *= scale
-
-            # Resize mel_db to fit the desired shape:
-            c = np.resize(mel_db, (1, 77, 768))
-
+            zoom_factor = (77 / mel_db.shape[0], 768 / mel_db.shape[1])
+            c = np.array([zoom(mel_db, zoom_factor)])
+        elif opt.feature == 'mfcc':
+            scale = 1
+            mfccs = librosa.feature.mfcc(y=y, sr=SAMPLING_RATE, n_mfcc=13)
+            mfccs = mfccs - np.mean(mfccs, axis=1, keepdims=True)
+            zoom_factor = (77 / mfccs.shape[0], 768 / mfccs.shape[1])
+            c = np.array([zoom(mfccs, zoom_factor)])
+            c *= scale
         else:
-            raise NotImplementedError("Only 'waveform', 'fft', and 'melspectrogram' are implemented features")
-
+            raise NotImplementedError("Only 'waveform', 'fft', 'melspectrogram', and 'mfcc' are implemented features")
+    
         c = torch.from_numpy(c).to(device)
         data.append(c)
 
