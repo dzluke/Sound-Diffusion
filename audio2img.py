@@ -121,8 +121,7 @@ def main(args=None):
     parser.add_argument(
         "--feature",
         type=str,
-        help="how to embed the audio in feature space; options: 'waveform', 'fft', 'melspectrogram'"
-
+        help="how to embed the audio in feature space; options: 'waveform', 'fft', 'melspectrogram', 'mfcc'"
     )
     parser.add_argument(
         "--input_folder",
@@ -259,7 +258,20 @@ def main(args=None):
         choices=["full", "autocast"],
         default="autocast"
     )
-
+    # Add the text prompt and strength
+    parser.add_argument(
+        "--textprompt",
+        type=str,
+        help="Create a text prompt",
+        nargs="?",
+        default=""
+    )
+    parser.add_argument(
+        "--textstrength",
+        type=float,
+        help="determine the strength of the text prompt",
+        default=1
+    )
     # if 'args' was not passed to this function, read from sys.argv, else read from the provided string 'args'
     if args is None:
         opt = parser.parse_args()
@@ -358,7 +370,7 @@ def main(args=None):
             c = np.array([zoom(mfccs, zoom_factor)])
             c *= scale
         else:
-            raise NotImplementedError("Only 'waveform', 'fft', and 'melspectrogram' are implemented features")
+            raise NotImplementedError("Only 'waveform', 'fft', 'melspectrogram', and 'mfcc' are implemented features")
     
         c = torch.from_numpy(c).to(device)
         data.append(c)
@@ -380,7 +392,13 @@ def main(args=None):
                 for n in trange(opt.n_iter, desc="Sampling"):
                     for i in range(len(data)):
                         save_path = save_paths[i]
-                        c = data[i]
+                        
+
+                        # Add the text prompt to the data, scaling to --textstrength
+                        textdata = model.get_learned_conditioning(opt.textprompt)
+                        textdata = torch.mul(textdata, opt.textstrength)
+                        print("textdata: ", opt.textprompt)
+                        c = data[i] + textdata
 
                         uc = None
                         if opt.scale != 1.0:
