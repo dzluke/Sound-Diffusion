@@ -278,7 +278,7 @@ def img2img(prompts, init_img, outpath, opt):
 
     sampler.make_schedule(ddim_num_steps=opt.ddim_steps, ddim_eta=opt.ddim_eta, verbose=False)
 
-    assert 0. <= strength <= 1., 'can only work with strength in [0.0, 1.0]'
+    assert 0. <= strength < 1., 'can only work with strength in [0.0, 1.0]'
     t_enc = int(strength * opt.ddim_steps)
     print(f"target t_enc is {t_enc} steps")
 
