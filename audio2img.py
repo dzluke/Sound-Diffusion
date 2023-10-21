@@ -396,9 +396,27 @@ def main(args=None):
 
                         # Add the text prompt to the data, scaling to --textstrength
                         textdata = model.get_learned_conditioning(opt.textprompt)
-                        textdata = torch.mul(textdata, opt.textstrength)
-                        print("textdata: ", opt.textprompt)
-                        c = data[i] + textdata
+                        
+                        maxtext = torch.max(textdata)
+                        mintext = torch.min(textdata)
+                        textrange = maxtext-mintext
+                        
+                        ### david's playground
+                        maxtext = torch.max(textdata) / opt.textstrength
+                        mintext = torch.min(textdata) / opt.textstrength
+                        textrange = maxtext-mintext
+                        ###
+                        maxsound = torch.max(data[i])
+                        minsound = torch.min(data[i]) 
+                        soundrange = maxsound-minsound
+                        
+                        normdata = ((data[i]-minsound)*textrange/soundrange) + mintext
+                        # print("playground")
+                        # print(torch.max(normdata))
+                        # print(torch.min(normdata))
+                        # print(torch.max(textdata))
+                        # print(torch.min(textdata))
+                        c = normdata + textdata
 
                         uc = None
                         if opt.scale != 1.0:

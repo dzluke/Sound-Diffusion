@@ -182,11 +182,27 @@ def text2img(encodings, outpath, opt, titles=None):
                     for i in range(encodings.shape[0]):  # for each encoding provided, generate an image
                         # Add the text prompt to the data, scaling to --textstrength
                         textdata = model.get_learned_conditioning(opt.textprompt)
-                        textdata = torch.mul(textdata, opt.textstrength)
-                        print("AAAAAAAAAAAAAAAAA")
-                        print("textdata: " + opt.textprompt)
-
-                        c = encodings[i] + textdata
+                        
+                        maxtext = torch.max(textdata)
+                        mintext = torch.min(textdata)
+                        textrange = maxtext-mintext
+                        
+                        ### david's playground
+                        maxtext = torch.max(textdata) / opt.textstrength
+                        mintext = torch.min(textdata) / opt.textstrength
+                        textrange = maxtext-mintext
+                        ###
+                        maxsound = torch.max(encodings[i])
+                        minsound = torch.min(encodings[i]) 
+                        soundrange = maxsound-minsound
+                        
+                        normdata = ((encodings[i]-minsound)*textrange/soundrange) + mintext
+                        # print("playground")
+                        # print(torch.max(normdata))
+                        # print(torch.min(normdata))
+                        # print(torch.max(textdata))
+                        # print(torch.min(textdata))
+                        c = normdata + textdata
                         uc = None
                         if opt.scale != 1.0:
                             uc = model.get_learned_conditioning(batch_size * [""])
@@ -294,11 +310,29 @@ def img2img(prompts, init_img, outpath, opt):
                 tic = time.time()
                 for n in trange(opt.n_iter, desc="Sampling"):
                     for i in range(prompts.shape[0]):
+                        # Add the text prompt to the data, scaling to --textstrength
                         textdata = model.get_learned_conditioning(opt.textprompt)
-                        textdata = torch.mul(textdata, opt.textstrength)
-                        print("AAAAAAAAAAAAAAAAA")
-                        print("textdata: " + opt.textprompt)
-                        c = prompts[i] + textdata   
+                        
+                        maxtext = torch.max(textdata)
+                        mintext = torch.min(textdata)
+                        textrange = maxtext-mintext
+                        
+                        ### david's playground
+                        maxtext = torch.max(textdata) / opt.textstrength
+                        mintext = torch.min(textdata) / opt.textstrength
+                        textrange = maxtext-mintext
+                        ###
+                        maxsound = torch.max(prompts[i])
+                        minsound = torch.min(prompts[i]) 
+                        soundrange = maxsound-minsound
+                        
+                        normdata = ((prompts[i]-minsound)*textrange/soundrange) + mintext
+                        # print("playground")
+                        # print(torch.max(normdata))
+                        # print(torch.min(normdata))
+                        # print(torch.max(textdata))
+                        # print(torch.min(textdata))
+                        c = normdata + textdata
                         
                         uc = None
                         if opt.scale != 1.0:
