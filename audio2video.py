@@ -22,7 +22,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--feature",
     type=str,
-    help="how to embed the audio in feature space; options: 'waveform', 'fft'"
+    help="how to embed the audio in feature space; options: 'waveform', 'fft', 'melspectrogram'",
+    default="melspectrogram"
 )
 parser.add_argument(
     "--input_folder",
@@ -192,6 +193,16 @@ parser.add_argument(
     nargs="?",
     default=""
 )
+
+# Add the text prompt
+parser.add_argument(
+    "--textpromptend",
+    type=str,
+    help="Create a text prompt",
+    nargs="?",
+    default=""
+)
+
 parser.add_argument(
     "--textstrength",
     type=float,
@@ -267,6 +278,9 @@ for y in splitfiles:
 # interpolation = np.linspace(frames[0], frames[3], num=4)
 
 # generate images
+
+
+
 print(">>> Generating {} images".format(num_frames))
 if IMG2IMG:
     print(">>> Using img2img")
@@ -288,11 +302,12 @@ if IMG2IMG:
         prompt = frames[i]
         init_img_path = IMAGE_STORAGE_PATH / f"{(i - 1):05}.png"  # use the previous image
         # Add the MODEL_CKPT as input for the img2img function.
-        generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, args)
+        args.seed = args.seed + 1
+        generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i, num_frames, args)
 else:
     print(">>> Using text2img")
     # generate only using text2img
-    generate.text2img(frames, IMAGE_STORAGE_PATH)
+    generate.text2img(frames, IMAGE_STORAGE_PATH, args)
 
 # turn images into video
 ffmpeg_command = ["ffmpeg",
