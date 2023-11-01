@@ -280,6 +280,9 @@ for y in splitfiles:
 # generate images
 
 
+# Check to see if endtext is empty, if so, replace with the same text as the prompt
+if args.textpromptend == "":
+    args.textpromptend = args.textprompt
 
 print(">>> Generating {} images".format(num_frames))
 if IMG2IMG:
