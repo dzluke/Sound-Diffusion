@@ -330,11 +330,7 @@ def img2img(prompts, init_img, outpath, curr_frame, num_frames, opt):
                         soundrange = maxsound-minsound
                         
                         normdata = ((prompts[i]-minsound)*textrange/soundrange) + mintext
-                        # print("playground")
-                        # print(torch.max(normdata))
-                        # print(torch.min(normdata))
-                        # print(torch.max(textdata))
-                        # print(torch.min(textdata))
+
                         c = normdata + currenttextdata
                         
                         uc = None

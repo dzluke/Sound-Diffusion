@@ -6,6 +6,7 @@ from subprocess import run
 import time
 import util
 import argparse
+import extract_sonic_descriptors
 from PIL import Image
 
 
@@ -283,6 +284,8 @@ for y in splitfiles:
 # Check to see if endtext is empty, if so, replace with the same text as the prompt
 if args.textpromptend == "":
     args.textpromptend = args.textprompt
+    
+initialstrength = args.strength
 
 print(">>> Generating {} images".format(num_frames))
 if IMG2IMG:
@@ -306,6 +309,14 @@ if IMG2IMG:
         init_img_path = IMAGE_STORAGE_PATH / f"{(i - 1):05}.png"  # use the previous image
         # Add the MODEL_CKPT as input for the img2img function.
         args.seed = args.seed + 1
+        
+        print("current iteration: " + str(i))
+        db, spectral = extract_sonic_descriptors.find_desceriptors(splitfiles[i])
+        
+        args.strength = initialstrength + (-db / 50)
+        print(db, spectral)
+        print(args.strength)
+        
         generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i, num_frames, args)
 else:
     print(">>> Using text2img")
