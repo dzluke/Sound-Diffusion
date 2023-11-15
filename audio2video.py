@@ -287,6 +287,8 @@ if args.textpromptend == "":
     
 initialstrength = args.strength
 
+rmsarray = []
+
 print(">>> Generating {} images".format(num_frames))
 if IMG2IMG:
     print(">>> Using img2img")
@@ -311,18 +313,18 @@ if IMG2IMG:
         args.seed = args.seed + 1
         
         print("current iteration: " + str(i))
-        db, spectral = extract_sonic_descriptors.find_desceriptors(splitfiles[i])
+        rms, spectral = extract_sonic_descriptors.find_desceriptors(splitfiles[i])
         
-        args.strength = initialstrength + (-db / 50)
-        print(db, spectral)
-        print(args.strength)
-        
-        generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i, num_frames, args)
+        # args.strength = initialstrength + (-db / 50)
+        rmsarray.append(rms)
+        generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i, num_frames, rms, args)
 else:
     print(">>> Using text2img")
     # generate only using text2img
     generate.text2img(frames, IMAGE_STORAGE_PATH, args)
 
+
+print(rmsarray)
 # turn images into video
 ffmpeg_command = ["ffmpeg",
                   "-y",  # automatically overwrite if output exists

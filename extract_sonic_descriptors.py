@@ -16,7 +16,7 @@ def find_desceriptors(audio):
     spectral_centroid = librosa.feature.spectral_centroid(y=audio, sr=44100, n_fft=FRAME_SIZE, hop_length=HOP_LENGTH)[0]
     # Calculate the average spectral centroid
     avg_spectral_centroid = np.mean(spectral_centroid)
-    return loudness_in_db, avg_spectral_centroid 
+    return rms, avg_spectral_centroid 
 
 # parser = argparse.ArgumentParser()
 # parser.add_argument(

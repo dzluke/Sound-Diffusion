@@ -259,7 +259,7 @@ def text2img(encodings, outpath, opt, titles=None):
           f" \nEnjoy.")
 
 
-def img2img(prompts, init_img, outpath, curr_frame, num_frames, opt):
+def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
     """
     Generate an image using img2img
     prompts: 4 dim np array of shape (N, 1, 77, 768)
@@ -324,14 +324,18 @@ def img2img(prompts, init_img, outpath, curr_frame, num_frames, opt):
                         maxtext = torch.max(currenttextdata) / opt.textstrength
                         mintext = torch.min(currenttextdata) / opt.textstrength
                         textrange = maxtext-mintext
-                        ###
                         maxsound = torch.max(prompts[i])
                         minsound = torch.min(prompts[i]) 
                         soundrange = maxsound-minsound
                         
                         normdata = ((prompts[i]-minsound)*textrange/soundrange) + mintext
 
-                        c = normdata + currenttextdata
+                        rms = rms * .2
+                        soundarray = np.full((1, 77, 768), rms)
+                        soundarray = torch.from_numpy(soundarray).to(device).float()
+                        ###
+
+                        c = normdata + currenttextdata + soundarray
                         
                         uc = None
                         if opt.scale != 1.0:
