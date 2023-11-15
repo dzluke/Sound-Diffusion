@@ -16,6 +16,7 @@ from contextlib import contextmanager, nullcontext
 import librosa
 import soundfile as sf
 from pathlib import Path
+from scipy.ndimage import zoom
 
 # sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -120,7 +121,7 @@ def main(args=None):
     parser.add_argument(
         "--feature",
         type=str,
-        help="how to embed the audio in feature space; options: 'waveform', 'fft'"
+        help="how to embed the audio in feature space; options: 'waveform', 'fft', 'melspectrogram', 'mfcc'"
     )
     parser.add_argument(
         "--input_folder",
@@ -257,7 +258,20 @@ def main(args=None):
         choices=["full", "autocast"],
         default="autocast"
     )
-
+    # Add the text prompt and strength
+    parser.add_argument(
+        "--textprompt",
+        type=str,
+        help="Create a text prompt",
+        nargs="?",
+        default=""
+    )
+    parser.add_argument(
+        "--textstrength",
+        type=float,
+        help="determine the strength of the text prompt",
+        default=1
+    )
     # if 'args' was not passed to this function, read from sys.argv, else read from the provided string 'args'
     if args is None:
         opt = parser.parse_args()
@@ -329,21 +343,35 @@ def main(args=None):
             scale = 1
             y = librosa.util.fix_length(y, size=77 * 768)
             sf.write(save_path / f"{audio_name}.wav", y, samplerate=SAMPLING_RATE)
-            # convert audio to feature space
             c = np.resize(y, (1, 77, 768))
             c *= scale
         elif opt.feature == 'fft':
             scale = 1
-            # stft makes an np array of size (1 + n_fft / 2, 1 + audio.size // hop_length)
             n_fft = 1534
             hop_length = y.size // 77 + 1
             stft = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
-            stft = np.abs(stft)  # TODO: is it ok to throw out the phase data?
+            stft = np.abs(stft)
             stft *= scale
-            c = np.array([stft.T])  # transpose and add a dimension to have shape (1,77,768)
+            zoom_factor = (77 / stft.shape[0], 768 / stft.shape[1])
+            c = np.array([zoom(stft, zoom_factor)])
+        elif opt.feature == 'melspectrogram':
+            scale = 1
+            mel = librosa.feature.melspectrogram(y=y, sr=SAMPLING_RATE, n_mels=128, fmax=8000)
+            mel_db = librosa.power_to_db(mel, ref=np.max)
+            mel_db = (mel_db + 80) / 80
+            mel_db *= scale
+            zoom_factor = (77 / mel_db.shape[0], 768 / mel_db.shape[1])
+            c = np.array([zoom(mel_db, zoom_factor)])
+        elif opt.feature == 'mfcc':
+            scale = 1
+            mfccs = librosa.feature.mfcc(y=y, sr=SAMPLING_RATE, n_mfcc=13)
+            mfccs = mfccs - np.mean(mfccs, axis=1, keepdims=True)
+            zoom_factor = (77 / mfccs.shape[0], 768 / mfccs.shape[1])
+            c = np.array([zoom(mfccs, zoom_factor)])
+            c *= scale
         else:
-            raise NotImplementedError("Only 'waveform' and 'fft' are implemented features")
-
+            raise NotImplementedError("Only 'waveform', 'fft', 'melspectrogram', and 'mfcc' are implemented features")
+    
         c = torch.from_numpy(c).to(device)
         data.append(c)
 
@@ -364,7 +392,31 @@ def main(args=None):
                 for n in trange(opt.n_iter, desc="Sampling"):
                     for i in range(len(data)):
                         save_path = save_paths[i]
-                        c = data[i]
+                        
+
+                        # Add the text prompt to the data, scaling to --textstrength
+                        textdata = model.get_learned_conditioning(opt.textprompt)
+                        
+                        maxtext = torch.max(textdata)
+                        mintext = torch.min(textdata)
+                        textrange = maxtext-mintext
+                        
+                        ### david's playground
+                        maxtext = torch.max(textdata) / opt.textstrength
+                        mintext = torch.min(textdata) / opt.textstrength
+                        textrange = maxtext-mintext
+                        ###
+                        maxsound = torch.max(data[i])
+                        minsound = torch.min(data[i]) 
+                        soundrange = maxsound-minsound
+                        
+                        normdata = ((data[i]-minsound)*textrange/soundrange) + mintext
+                        # print("playground")
+                        # print(torch.max(normdata))
+                        # print(torch.min(normdata))
+                        # print(torch.max(textdata))
+                        # print(torch.min(textdata))
+                        c = normdata + textdata
 
                         uc = None
                         if opt.scale != 1.0:
