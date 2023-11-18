@@ -186,7 +186,6 @@ parser.add_argument(
     nargs="?",
     help="path to the input image"
 )
-# Add the text prompt
 parser.add_argument(
     "--textprompt",
     type=str,
@@ -194,8 +193,6 @@ parser.add_argument(
     nargs="?",
     default=""
 )
-
-# Add the text prompt
 parser.add_argument(
     "--textpromptend",
     type=str,
@@ -203,7 +200,6 @@ parser.add_argument(
     nargs="?",
     default=""
 )
-
 parser.add_argument(
     "--textstrength",
     type=float,

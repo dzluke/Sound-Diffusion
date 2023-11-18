@@ -29,8 +29,22 @@ python scripts/txt2img.py \
   --prompt "a red juicy apple floating in outer space, like a planet" \
   --n_samples 1 --n_iter 1 --plms
  ```
-The generated image will be saved to `outputs/txt2img-samples` .
+The generated image will be saved to `outputs/txt2img-samples`.
 
+## For Windows users
+
+1. Follow instructions for mac until part 3.
+2. Set up virtual environment:
+```
+pip install virtualenv
+python -m venv venv
+. venv/Scripts/activate
+```
+
+4. Install dependencies: `pip install -r requirementswindows.txt`
+  Note that assumes the user has CUDA. If your computer does not have a GPU, you will have to reinstall pytorch without it.
+
+5. Continue following instructions for mac starting at 5.
 # Running the code:
 
 To peform Audio-to-Image, use the script `audio2img.py`. It can be run in the following way:
@@ -41,16 +55,24 @@ To perform Audio-to-Video, use the script `audio2video.py`. It can be run in the
 
 `python audio2video.py --path PATH --fps FRAMES_PER_SECOND --strength STRENGTH` 
 
-arguments:
+There are many other arguments that influence the model, including text, sound representation, and strength of text. The list of key args is as follows:
 
-`PATH`: path to audio that will be visualized (string)
+`--path`: path to audio that will be visualized (string)
 
-`FRAMES_PER_SECOND`: the frames per second of the resulting video (int). This determines the number of images that are
+`--fps`: the frames per second of the resulting video (int). This determines the number of images that are
 generated
 
-`STRENGTH`: a float between 0 and 1 that determines the weight of the previous image compared to the
-weight of the current prompt. A value of `1.0` "corresponds to full destruction of information in init image."
-Suggested values: between `0.2` and `0.7`.
+`--strength`: a float between 0 and 1 that determines the weight of the previous image compared to the weight of the current prompt. A value of `1.0` "corresponds to full destruction of information in init image." Suggested values: between `0.2` and `0.7`.
+
+`--ckpt`: path to a .ckpt model which will be used to generate images
+
+`--textprompt`: text prompt for each image. Default to the empty string.
+
+`--textpromptend`: ending textprompt by the end of the video. Default as the initial `textprompt`
+
+`--textstrength`: scales the ratio of text influence vs sound influence. For text to make an influence, value should generally be `200+`
+
+`--feature`: determines how sound is represented, includes `waveform`, `fft`, and `melspectrogram`.
 
 
 # Sound Diffusion: research journal

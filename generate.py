@@ -197,11 +197,7 @@ def text2img(encodings, outpath, opt, titles=None):
                         soundrange = maxsound-minsound
                         
                         normdata = ((encodings[i]-minsound)*textrange/soundrange) + mintext
-                        # print("playground")
-                        # print(torch.max(normdata))
-                        # print(torch.min(normdata))
-                        # print(torch.max(textdata))
-                        # print(torch.min(textdata))
+
                         c = normdata + textdata
                         uc = None
                         if opt.scale != 1.0:
@@ -311,7 +307,7 @@ def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
                 for n in trange(opt.n_iter, desc="Sampling"):
                     for i in range(prompts.shape[0]):
                         # Add the text prompt to the data, scaling to --textstrength
-                        
+                        # Linearly traverse through the text encoding from two different text prompts.
                         textdatainit = model.get_learned_conditioning(opt.textprompt).cpu().numpy()
                         textdatafinal = model.get_learned_conditioning(opt.textpromptend).cpu().numpy()
                         currenttextdata = np.linspace(textdatainit, textdatafinal, num=num_frames)[curr_frame]
@@ -320,7 +316,7 @@ def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
                         mintext = torch.min(currenttextdata)
                         textrange = maxtext-mintext
                         
-                        ### david's playground
+                        ### Normalize the sound data
                         maxtext = torch.max(currenttextdata) / opt.textstrength
                         mintext = torch.min(currenttextdata) / opt.textstrength
                         textrange = maxtext-mintext
@@ -330,11 +326,12 @@ def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
                         
                         normdata = ((prompts[i]-minsound)*textrange/soundrange) + mintext
 
-                        rms = rms * .2
+                        rms = rms * .8
                         soundarray = np.full((1, 77, 768), rms)
                         soundarray = torch.from_numpy(soundarray).to(device).float()
                         ###
 
+                        # Sound data + text data + rms value
                         c = normdata + currenttextdata + soundarray
                         
                         uc = None
