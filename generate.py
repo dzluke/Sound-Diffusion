@@ -332,8 +332,10 @@ def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
                         ###
 
                         # Sound data + text data + rms value
-                        c = normdata + currenttextdata + soundarray
-                        
+                        # c = normdata + currenttextdata + soundarray
+
+                        c = normdata + currenttextdata
+
                         uc = None
                         if opt.scale != 1.0:
                             uc = model.get_learned_conditioning(batch_size * [""])
