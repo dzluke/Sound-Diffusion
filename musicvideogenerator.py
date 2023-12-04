@@ -8,6 +8,7 @@ import util
 import argparse
 import extract_sonic_descriptors
 from PIL import Image
+import shutil
 
 
 FEATURE = "waveform"
@@ -294,7 +295,7 @@ for y in splitfiles:
 # Check to see if endtext is empty, if so, replace with the same text as the prompt
 if args.textpromptend == "":
     args.textpromptend = args.textprompt
-    
+
 initialstrength = args.strength
 
 rmsarray = []
@@ -323,19 +324,23 @@ if IMG2IMG:
         init_img_path = IMAGE_STORAGE_PATH / f"{(i - 1):05}.png"  # use the previous image
         # Add the MODEL_CKPT as input for the img2img function.
         args.seed = args.seed + 1
-        
+
         print("current iteration: " + str(i))
         rms, spectral = extract_sonic_descriptors.find_desceriptors(splitfiles[i])
-        
+
         if i >= frametimes[next_prompt]:
             curr_prompt = next_prompt
             next_prompt += 1
             if next_prompt >= num_prompts:
                 next_prompt = curr_prompt
-                
+
         args.textprompt = prompts[curr_prompt]
         args.textpromptend = prompts[next_prompt]
         curr_num_frames = frametimes[next_prompt] - frametimes[curr_prompt]
+        print("DEBUG: frametimes[next] {} ; frametimes[curr] {}; curr_num_frames {}".format(frametimes[next_prompt], frametimes[curr_prompt], curr_num_frames))
+        if curr_num_frames == 0:
+            print("ERROR: curr_num_frames == 0; skipping iteration")
+            continue
         rmsarray.append(rms)
         generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i - frametimes[curr_prompt], curr_num_frames, rms, args)
 else:
@@ -359,4 +364,12 @@ run(ffmpeg_command)
 
 print(">>> Generated {} images".format(num_frames))
 print(">>> Took", util.time_string(time.time() - tic))
+print(">>> Avg time per frame: ", util.time_string((time.time() - tic) / num_frames))
+
+# store an extra copy just in case
+VIDEO_OUTPUT_FOLDER = Path("./video_outputs")
+num_videos = len(list(VIDEO_OUTPUT_FOLDER.iterdir()))
+filename = "output{}.mp4".format(num_videos)
+shutil.copy(OUTPUT_VIDEO_PATH, VIDEO_OUTPUT_FOLDER / filename)
+
 print("Done.")

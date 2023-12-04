@@ -310,6 +310,7 @@ def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
                         # Linearly traverse through the text encoding from two different text prompts.
                         textdatainit = model.get_learned_conditioning(opt.textprompt).cpu().numpy()
                         textdatafinal = model.get_learned_conditioning(opt.textpromptend).cpu().numpy()
+                        print("DEBUG: init.size {} ; final.size {} ; num_frames {} ; curr_frame {}".format(textdatainit.size, textdatafinal.size, num_frames, curr_frame))
                         currenttextdata = np.linspace(textdatainit, textdatafinal, num=num_frames)[curr_frame]
                         currenttextdata = torch.from_numpy(currenttextdata).to(device)
                         maxtext = torch.max(currenttextdata)
