@@ -337,7 +337,7 @@ if IMG2IMG:
         args.textpromptend = prompts[next_prompt]
         curr_num_frames = frametimes[next_prompt] - frametimes[curr_prompt]
         rmsarray.append(rms)
-        generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i, curr_num_frames, rms, args)
+        generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i - frametimes[curr_prompt], curr_num_frames, rms, args)
 else:
     print(">>> Using text2img")
     # generate only using text2img
