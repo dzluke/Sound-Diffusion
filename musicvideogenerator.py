@@ -301,6 +301,11 @@ initialstrength = args.strength
 
 rmsarray = []
 
+print(">>> Loading model")
+# load model
+config = OmegaConf.load(f"{args.config}")
+model = generate.load_model_from_config(config, f"{args.ckpt}")
+
 print(">>> Generating {} images".format(num_frames))
 if IMG2IMG:
     print(">>> Using img2img")
@@ -315,11 +320,9 @@ if IMG2IMG:
         pass
     else:
         # generate the first frame using text2img with audio as prompt
-        generate.text2img(np.array([frames[0]]), IMAGE_STORAGE_PATH, args)
-
-    # load model
-    config = OmegaConf.load(f"{args.config}")
-    model = generate.load_model_from_config(config, f"{args.ckpt}")
+        prompt = prompts[0]
+        c = model.get_learned_conditioning(prompt)
+        generate.text2img(np.array([c]), IMAGE_STORAGE_PATH, args)
 
     curr_prompt = 0
     next_prompt = 1
