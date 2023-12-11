@@ -308,11 +308,14 @@ def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
                     for i in range(prompts.shape[0]):
                         # Add the text prompt to the data, scaling to --textstrength
                         # Linearly traverse through the text encoding from two different text prompts.
-                        textdatainit = model.get_learned_conditioning(opt.textprompt).cpu().numpy()
-                        textdatafinal = model.get_learned_conditioning(opt.textpromptend).cpu().numpy()
-                        print("DEBUG: init.size {} ; final.size {} ; num_frames {} ; curr_frame {}".format(textdatainit.size, textdatafinal.size, num_frames, curr_frame))
-                        currenttextdata = np.linspace(textdatainit, textdatafinal, num=num_frames)[curr_frame]
-                        currenttextdata = torch.from_numpy(currenttextdata).to(device)
+                        # textdatainit = model.get_learned_conditioning(opt.textprompt).cpu().numpy()
+                        # textdatafinal = model.get_learned_conditioning(opt.textpromptend).cpu().numpy()
+                        textdatainit = model.get_learned_conditioning(opt.textprompt).cpu()
+                        textdatafinal = model.get_learned_conditioning(opt.textpromptend).cpu()
+                        # currenttextdata = np.linspace(textdatainit, textdatafinal, num=num_frames)[curr_frame]
+                        currenttextdata = torch.lerp(textdatainit, textdatafinal, curr_frame/num_frames)
+                        # currenttextdata = torch.from_numpy(currenttextdata).to(device)
+                        currenttextdata = currenttextdata.to(device)
                         maxtext = torch.max(currenttextdata)
                         mintext = torch.min(currenttextdata)
                         textrange = maxtext-mintext
@@ -336,6 +339,7 @@ def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
                         # c = normdata + currenttextdata + soundarray
 
                         c = normdata + currenttextdata
+                        # c = currenttextdata  # this uses no audio information
 
                         uc = None
                         if opt.scale != 1.0:

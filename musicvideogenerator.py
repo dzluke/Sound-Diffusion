@@ -343,6 +343,19 @@ if IMG2IMG:
             continue
         rmsarray.append(rms)
         generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i - frametimes[curr_prompt], curr_num_frames, rms, args)
+
+        if i % (10 * FRAME_RATE) == 0:
+            # every 10 seconds, create an in progress video
+            ffmpeg_command = ["ffmpeg",
+                              "-y",  # automatically overwrite if output exists
+                              "-framerate", str(FRAME_RATE),  # set framerate
+                              "-i", str(IMAGE_STORAGE_PATH) + "/%05d.png",  # set image source
+                              "-i", str(AUDIO_PATH),  # set audio path
+                              "-vcodec", "libx264",
+                              # "-acodec", "copy",
+                              "-pix_fmt", "yuv420p",
+                              str(OUTPUT_VIDEO_PATH)]
+            run(ffmpeg_command)
 else:
     print(">>> Using text2img")
     # generate only using text2img
