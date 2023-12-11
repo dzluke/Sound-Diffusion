@@ -255,7 +255,7 @@ def text2img(encodings, outpath, opt, titles=None):
           f" \nEnjoy.")
 
 
-def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
+def img2img(model, prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
     """
     Generate an image using img2img
     prompts: 4 dim np array of shape (N, 1, 77, 768)
@@ -266,8 +266,8 @@ def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
     strength = opt.strength
     seed_everything(opt.seed)
 
-    config = OmegaConf.load(f"{opt.config}")
-    model = load_model_from_config(config, f"{opt.ckpt}")
+    # config = OmegaConf.load(f"{opt.config}")
+    # model = load_model_from_config(config, f"{opt.ckpt}")
 
     device = torch.device(get_device())
     model = model.to(device)

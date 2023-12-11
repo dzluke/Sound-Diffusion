@@ -9,6 +9,7 @@ import argparse
 import extract_sonic_descriptors
 from PIL import Image
 import shutil
+from omegaconf import OmegaConf
 
 
 FEATURE = "waveform"
@@ -316,6 +317,10 @@ if IMG2IMG:
         # generate the first frame using text2img with audio as prompt
         generate.text2img(np.array([frames[0]]), IMAGE_STORAGE_PATH, args)
 
+    # load model
+    config = OmegaConf.load(f"{args.config}")
+    model = generate.load_model_from_config(config, f"{args.ckpt}")
+
     curr_prompt = 0
     next_prompt = 1
     # for the rest of the images, each one is the previous image conditioned on the current prompt
@@ -342,7 +347,7 @@ if IMG2IMG:
             print("ERROR: curr_num_frames == 0; skipping iteration")
             continue
         rmsarray.append(rms)
-        generate.img2img(np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i - frametimes[curr_prompt], curr_num_frames, rms, args)
+        generate.img2img(model, np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i - frametimes[curr_prompt], curr_num_frames, rms, args)
 
         if i % (10 * FRAME_RATE) == 0:
             # every 10 seconds, create an in progress video
