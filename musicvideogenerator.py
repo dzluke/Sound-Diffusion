@@ -307,67 +307,52 @@ config = OmegaConf.load(f"{args.config}")
 model = generate.load_model_from_config(config, f"{args.ckpt}")
 
 print(">>> Generating {} images".format(num_frames))
-if IMG2IMG:
-    print(">>> Using img2img")
-    if INIT_IMG is not None:
-        # first frame is provided image
-        img = Image.open(INIT_IMG)
-        img = img.resize((512, 512))
-        save_path = IMAGE_STORAGE_PATH / f"{0:05}.png"
-        img.save(save_path)
-    elif INIT_PROMPT is not None:
-        # generate the first frame using text2img with text as prompt
-        pass
-    else:
-        # generate the first frame using text2img with audio as prompt
-        prompt = prompts[0]
-        c = model.get_learned_conditioning(prompt)
-        generate.text2img(np.array([c]), IMAGE_STORAGE_PATH, args)
+print(">>> Using img2img")
 
-    curr_prompt = 0
-    next_prompt = 1
-    # for the rest of the images, each one is the previous image conditioned on the current prompt
-    for i in range(1, num_frames):
-        prompt = frames[i]
-        init_img_path = IMAGE_STORAGE_PATH / f"{(i - 1):05}.png"  # use the previous image
-        # Add the MODEL_CKPT as input for the img2img function.
-        args.seed = args.seed + 1
+# generate first frame
+c = model.get_learned_conditioning(prompts[0])
+generate.text2img(np.array([c.cpu()]), IMAGE_STORAGE_PATH, args)
 
-        print("current iteration: " + str(i))
-        rms, spectral = extract_sonic_descriptors.find_desceriptors(splitfiles[i])
+curr_prompt = 0
+next_prompt = 1
+# for the rest of the images, each one is the previous image conditioned on the current prompt
+for i in range(1, num_frames):
+    prompt = frames[i]
+    init_img_path = IMAGE_STORAGE_PATH / f"{(i - 1):05}.png"  # use the previous image
+    # Add the MODEL_CKPT as input for the img2img function.
+    args.seed = args.seed + 1
 
-        if i >= frametimes[next_prompt]:
-            curr_prompt = next_prompt
-            next_prompt += 1
-            if next_prompt >= num_prompts:
-                next_prompt = curr_prompt
+    print("current iteration: " + str(i))
+    rms, spectral = extract_sonic_descriptors.find_desceriptors(splitfiles[i])
 
-        args.textprompt = prompts[curr_prompt]
-        args.textpromptend = prompts[next_prompt]
-        curr_num_frames = frametimes[next_prompt] - frametimes[curr_prompt]
-        print("DEBUG: frametimes[next] {} ; frametimes[curr] {}; curr_num_frames {}".format(frametimes[next_prompt], frametimes[curr_prompt], curr_num_frames))
-        if curr_num_frames == 0:
-            print("ERROR: curr_num_frames == 0; skipping iteration")
-            continue
-        rmsarray.append(rms)
-        generate.img2img(model, np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i - frametimes[curr_prompt], curr_num_frames, rms, args)
+    if i >= frametimes[next_prompt]:
+        curr_prompt = next_prompt
+        next_prompt += 1
+        if next_prompt >= num_prompts:
+            next_prompt = curr_prompt
 
-        if i % (10 * FRAME_RATE) == 0:
-            # every 10 seconds, create an in progress video
-            ffmpeg_command = ["ffmpeg",
-                              "-y",  # automatically overwrite if output exists
-                              "-framerate", str(FRAME_RATE),  # set framerate
-                              "-i", str(IMAGE_STORAGE_PATH) + "/%05d.png",  # set image source
-                              "-i", str(AUDIO_PATH),  # set audio path
-                              "-vcodec", "libx264",
-                              # "-acodec", "copy",
-                              "-pix_fmt", "yuv420p",
-                              str(OUTPUT_VIDEO_PATH)]
-            run(ffmpeg_command)
-else:
-    print(">>> Using text2img")
-    # generate only using text2img
-    generate.text2img(frames, IMAGE_STORAGE_PATH, args)
+    args.textprompt = prompts[curr_prompt]
+    args.textpromptend = prompts[next_prompt]
+    curr_num_frames = frametimes[next_prompt] - frametimes[curr_prompt]
+    if curr_num_frames == 0:
+        print("ERROR: curr_num_frames == 0; skipping iteration")
+        continue
+    rmsarray.append(rms)
+    generate.img2img(model, np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i - frametimes[curr_prompt], curr_num_frames, rms, args)
+
+    if i % (10 * FRAME_RATE) == 0:
+        # every 10 seconds, create an in progress video
+        ffmpeg_command = ["ffmpeg",
+                          "-y",  # automatically overwrite if output exists
+                          "-framerate", str(FRAME_RATE),  # set framerate
+                          "-i", str(IMAGE_STORAGE_PATH) + "/%05d.png",  # set image source
+                          "-i", str(AUDIO_PATH),  # set audio path
+                          "-vcodec", "libx264",
+                          # "-acodec", "copy",
+                          "-pix_fmt", "yuv420p",
+                          str(OUTPUT_VIDEO_PATH)]
+        run(ffmpeg_command)
+
 
 
 print(rmsarray)
