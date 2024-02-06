@@ -38,7 +38,7 @@ The generated image will be saved to `outputs/txt2img-samples`.
 ```
 pip install virtualenv
 python -m venv venv
-. venv/Scripts/activate
+.\venv\Scripts\activate
 ```
 
 4. Install dependencies: `pip install -r requirementswindows.txt`

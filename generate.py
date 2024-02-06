@@ -255,7 +255,7 @@ def text2img(encodings, outpath, opt, titles=None):
           f" \nEnjoy.")
 
 
-def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
+def img2img(model, prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
     """
     Generate an image using img2img
     prompts: 4 dim np array of shape (N, 1, 77, 768)
@@ -266,8 +266,8 @@ def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
     strength = opt.strength
     seed_everything(opt.seed)
 
-    config = OmegaConf.load(f"{opt.config}")
-    model = load_model_from_config(config, f"{opt.ckpt}")
+    # config = OmegaConf.load(f"{opt.config}")
+    # model = load_model_from_config(config, f"{opt.ckpt}")
 
     device = torch.device(get_device())
     model = model.to(device)
@@ -308,32 +308,40 @@ def img2img(prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
                     for i in range(prompts.shape[0]):
                         # Add the text prompt to the data, scaling to --textstrength
                         # Linearly traverse through the text encoding from two different text prompts.
-                        textdatainit = model.get_learned_conditioning(opt.textprompt).cpu().numpy()
-                        textdatafinal = model.get_learned_conditioning(opt.textpromptend).cpu().numpy()
-                        currenttextdata = np.linspace(textdatainit, textdatafinal, num=num_frames)[curr_frame]
-                        currenttextdata = torch.from_numpy(currenttextdata).to(device)
-                        maxtext = torch.max(currenttextdata)
-                        mintext = torch.min(currenttextdata)
-                        textrange = maxtext-mintext
+                        # textdatainit = model.get_learned_conditioning(opt.textprompt).cpu().numpy()
+                        # textdatafinal = model.get_learned_conditioning(opt.textpromptend).cpu().numpy()
+                        textdatainit = model.get_learned_conditioning(opt.textprompt).cpu()
+                        textdatafinal = model.get_learned_conditioning(opt.textpromptend).cpu()
+                        # currenttextdata = np.linspace(textdatainit, textdatafinal, num=num_frames)[curr_frame]
+                        currenttextdata = torch.lerp(textdatainit, textdatafinal, curr_frame/num_frames)
+                        currenttextdata = currenttextdata.to(device)
+                        # currenttextdata = torch.from_numpy(currenttextdata).to(device)
+                        # currenttextdata = currenttextdata.to(device)
+                        # maxtext = torch.max(currenttextdata)
+                        # mintext = torch.min(currenttextdata)
+                        # textrange = maxtext-mintext
                         
                         ### Normalize the sound data
-                        maxtext = torch.max(currenttextdata) / opt.textstrength
-                        mintext = torch.min(currenttextdata) / opt.textstrength
-                        textrange = maxtext-mintext
-                        maxsound = torch.max(prompts[i])
-                        minsound = torch.min(prompts[i]) 
-                        soundrange = maxsound-minsound
-                        
-                        normdata = ((prompts[i]-minsound)*textrange/soundrange) + mintext
-
-                        rms = rms * .8
-                        soundarray = np.full((1, 77, 768), rms)
-                        soundarray = torch.from_numpy(soundarray).to(device).float()
+                        # maxtext = torch.max(currenttextdata) / opt.textstrength
+                        # mintext = torch.min(currenttextdata) / opt.textstrength
+                        # textrange = maxtext-mintext
+                        # maxsound = torch.max(prompts[i])
+                        # minsound = torch.min(prompts[i])
+                        # soundrange = maxsound-minsound
+                        #
+                        # normdata = ((prompts[i]-minsound)*textrange/soundrange) + mintext
+                        #
+                        # rms = rms * .8
+                        # soundarray = np.full((1, 77, 768), rms)
+                        # soundarray = torch.from_numpy(soundarray).to(device).float()
                         ###
 
                         # Sound data + text data + rms value
-                        c = normdata + currenttextdata + soundarray
-                        
+                        # c = normdata + currenttextdata + soundarray
+
+                        # c = normdata + currenttextdata
+                        c = currenttextdata  # this uses no audio information
+
                         uc = None
                         if opt.scale != 1.0:
                             uc = model.get_learned_conditioning(batch_size * [""])
