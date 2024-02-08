@@ -20,7 +20,7 @@ IMAGE_STORAGE_PATH = Path("./image_outputs")
 OUTPUT_VIDEO_PATH = Path("./video_outputs")
 OUTPUT_VIDEO_PATH.mkdir(exist_ok=True)
 
-def find_desceriptors(audio):
+def find_descriptors(audio):
     # Calculate the amplitude
     # Compute the RMS value
     rms = np.sqrt(np.mean(audio**2))
@@ -309,7 +309,7 @@ for i in range(1, num_frames):
     args.seed = args.seed + 1
 
     print("current iteration: " + str(i))
-    rms, spectral = find_desceriptors(splitfiles[i])
+    rms = np.sqrt(np.mean(splitfiles[i] ** 2))
 
     if i >= frametimes[next_prompt]:
         curr_prompt = next_prompt

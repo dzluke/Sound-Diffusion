@@ -297,16 +297,14 @@ def img2img(model, prompts, init_img, outpath, curr_frame, num_frames, rms, opt)
                     for i in range(prompts.shape[0]):
                         # Add the text prompt to the data, scaling to --textstrength
                         # Linearly traverse through the text encoding from two different text prompts.
+
+                        #TODO @David can you change these vars to snake case?
                         textdatainit = model.get_learned_conditioning(opt.textprompt).cpu()
                         textdatafinal = model.get_learned_conditioning(opt.textpromptend).cpu()
                         currenttextdata = torch.lerp(textdatainit, textdatafinal, curr_frame/num_frames)
                         currenttextdata = currenttextdata.to(device)
-                        
-                        # Sound data + text data + rms value
-                        # c = normdata + currenttextdata + soundarray
 
-                        # c = normdata + currenttextdata
-                        c = currenttextdata  # this uses no audio information
+                        c = currenttextdata
 
                         uc = None
                         if opt.scale != 1.0:
@@ -314,6 +312,15 @@ def img2img(model, prompts, init_img, outpath, curr_frame, num_frames, rms, opt)
 
                         # encode (scaled latent)
                         z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc] * batch_size).to(device))
+
+                        # network bending
+                        delta = 0.8
+                        # add a matrix full of RMS
+                        z_enc += torch.ones_like(z_enc) * rms * delta
+
+                        # add a matrix made of random samples from a normal gaussian
+                        # z_enc += torch.normal(torch.zeros_like(z_enc), torch.ones_like(z_enc)) * rms * delta
+
                         # decode it
                         samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=opt.scale,
                                                  unconditional_conditioning=uc,)
