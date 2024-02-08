@@ -6,9 +6,23 @@ from subprocess import run
 import time
 import util
 import argparse
-import extract_sonic_descriptors
 from PIL import Image
 
+
+def find_desceriptors(audio):
+    # Calculate the amplitude
+    # Compute the RMS value
+    rms = np.sqrt(np.mean(audio**2))
+    # Convert the RMS value to dB
+    loudness_in_db = 20 * np.log10(rms)
+    # Define the frame size and hop length for spectral centroid calculation
+    FRAME_SIZE = 1024
+    HOP_LENGTH = 512
+    # Calculate the spectral centroid for each frame
+    spectral_centroid = librosa.feature.spectral_centroid(y=audio, sr=44100, n_fft=FRAME_SIZE, hop_length=HOP_LENGTH)[0]
+    # Calculate the average spectral centroid
+    avg_spectral_centroid = np.mean(spectral_centroid)
+    return rms, avg_spectral_centroid 
 
 FEATURE = "waveform"
 IMG2IMG = True  # use img2img to condition each generation on previous image
@@ -256,27 +270,6 @@ for y in splitfiles:
     frames.append(c)
 
 
-
-# n_fft = (ENCODING_DIMENSION[1] - 1) * 2  # 768 - 1 * 2 = 1534
-# hop_length = y.size // (ENCODING_DIMENSION[0] * num_frames) - 1
-
-# stft = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
-# stft = np.abs(stft)  # TODO: is it ok to throw out the phase data?
-# stft *= scale
-# frames = []
-# for i in range(num_frames):
-#     frame = stft[:, i * ENCODING_DIMENSION[0] : (i + 1) * ENCODING_DIMENSION[0]]
-#     frames.append(frame)
-
-# frames = [np.array([f.T]) for f in frames]  # transpose and add a dimension to have shape (1,77,768)
-# frames = np.array(frames)  # shape (num_frames,1,77,768)
-
-# interpolation between chords
-# interpolation = np.linspace(frames[0], frames[3], num=4)
-
-# generate images
-
-
 # Check to see if endtext is empty, if so, replace with the same text as the prompt
 if args.textpromptend == "":
     args.textpromptend = args.textprompt
@@ -309,7 +302,7 @@ if IMG2IMG:
         args.seed = args.seed + 1
         
         print("current iteration: " + str(i))
-        rms, spectral = extract_sonic_descriptors.find_desceriptors(splitfiles[i])
+        rms, spectral = find_desceriptors(splitfiles[i])
         
         # args.strength = initialstrength + (-db / 50)
         rmsarray.append(rms)

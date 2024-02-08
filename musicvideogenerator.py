@@ -6,14 +6,12 @@ from subprocess import run
 import time
 import util
 import argparse
-import extract_sonic_descriptors
 from PIL import Image
 import shutil
 from omegaconf import OmegaConf
 
 
 FEATURE = "waveform"
-IMG2IMG = True  # use img2img to condition each generation on previous image
 INIT_PROMPT = None
 SAMPLING_RATE = 44100
 ENCODING_DIMENSION = (77, 768)
@@ -21,6 +19,23 @@ ENCODING_DIMENSION = (77, 768)
 IMAGE_STORAGE_PATH = Path("./image_outputs")
 OUTPUT_VIDEO_PATH = Path("./video_outputs")
 OUTPUT_VIDEO_PATH.mkdir(exist_ok=True)
+
+def find_desceriptors(audio):
+    # Calculate the amplitude
+    # Compute the RMS value
+    rms = np.sqrt(np.mean(audio**2))
+    # Convert the RMS value to dB
+    loudness_in_db = 20 * np.log10(rms)
+    # Define the frame size and hop length for spectral centroid calculation
+    FRAME_SIZE = 1024
+    HOP_LENGTH = 512
+    # Calculate the spectral centroid for each frame
+    spectral_centroid = librosa.feature.spectral_centroid(y=audio, sr=44100, n_fft=FRAME_SIZE, hop_length=HOP_LENGTH)[0]
+    # Calculate the average spectral centroid
+    avg_spectral_centroid = np.mean(spectral_centroid)
+    return rms, avg_spectral_centroid 
+
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -33,13 +48,6 @@ parser.add_argument(
     "--input_folder",
     type=str,
     help="path to folder of input audio files"
-)
-parser.add_argument(
-    "--prompt",
-    type=str,
-    nargs="?",
-    default="a painting of a virus monster playing guitar",
-    help="the prompt to render"
 )
 parser.add_argument(
     "--outdir",
@@ -218,8 +226,9 @@ args = parser.parse_args()
 FRAME_RATE = args.fps
 AUDIO_PATH = Path(args.path)
 INIT_IMG = args.init_img
-# Add ckpt from args
 
+# Load prompts from file if specified
+# TODO: this could be wrong, depending on how the textfile is written
 if args.prompt_file is not None:
     with open(args.prompt_file, "r") as f:
         lines = [line.strip() for line in f.readlines()]
@@ -272,33 +281,9 @@ for y in splitfiles:
         raise NotImplementedError("Only 'waveform', 'fft', and 'melspectrogram' are implemented features")
     frames.append(c)
 
-
-
-# n_fft = (ENCODING_DIMENSION[1] - 1) * 2  # 768 - 1 * 2 = 1534
-# hop_length = y.size // (ENCODING_DIMENSION[0] * num_frames) - 1
-
-# stft = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
-# stft = np.abs(stft)  # TODO: is it ok to throw out the phase data?
-# stft *= scale
-# frames = []
-# for i in range(num_frames):
-#     frame = stft[:, i * ENCODING_DIMENSION[0] : (i + 1) * ENCODING_DIMENSION[0]]
-#     frames.append(frame)
-
-# frames = [np.array([f.T]) for f in frames]  # transpose and add a dimension to have shape (1,77,768)
-# frames = np.array(frames)  # shape (num_frames,1,77,768)
-
-# interpolation between chords
-# interpolation = np.linspace(frames[0], frames[3], num=4)
-
-# generate images
-
-
 # Check to see if endtext is empty, if so, replace with the same text as the prompt
 if args.textpromptend == "":
     args.textpromptend = args.textprompt
-
-initialstrength = args.strength
 
 rmsarray = []
 
@@ -324,7 +309,7 @@ for i in range(1, num_frames):
     args.seed = args.seed + 1
 
     print("current iteration: " + str(i))
-    rms, spectral = extract_sonic_descriptors.find_desceriptors(splitfiles[i])
+    rms, spectral = find_desceriptors(splitfiles[i])
 
     if i >= frametimes[next_prompt]:
         curr_prompt = next_prompt
