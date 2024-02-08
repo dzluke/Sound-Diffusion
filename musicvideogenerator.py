@@ -39,12 +39,6 @@ def find_descriptors(audio):
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--feature",
-    type=str,
-    help="how to embed the audio in feature space; options: 'waveform', 'fft', 'melspectrogram'",
-    default="melspectrogram"
-)
-parser.add_argument(
     "--input_folder",
     type=str,
     help="path to folder of input audio files"
@@ -253,34 +247,6 @@ num_frames = audio_length * FRAME_RATE
 for i in range(num_frames):
     splitfiles.append(y[i * SAMPLING_RATE // FRAME_RATE: (i + 1) * SAMPLING_RATE // FRAME_RATE])
 
-for y in splitfiles:
-    if args.feature == 'waveform':
-        scale = 1
-        y = librosa.util.fix_length(y, size=77 * 768)
-        # convert audio to feature space
-        c = np.resize(y, (1, 77, 768))
-        c *= scale
-    elif args.feature == 'fft':
-        scale = 1
-        # stft makes an np array of size (1 + n_fft / 2, 1 + audio.size // hop_length)
-        n_fft = 1534
-        hop_length = y.size // 77 + 1
-        stft = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
-        stft = np.abs(stft)  # TODO: is it ok to throw out the phase data?
-        stft *= scale
-        c = np.array([stft.T])  # transpose and add a dimension to have shape (1,77,768)
-    elif args.feature == 'melspectrogram':
-        scale = 1
-        mel = librosa.feature.melspectrogram(y=y, sr=SAMPLING_RATE, n_mels=128, fmax=8000)  # adjust parameters accordingly
-        mel_db = librosa.power_to_db(mel, ref=np.max)
-        mel_db = (mel_db + 80) / 80  # normalize to [0,1]; -80dB is a common threshold for silence in audio
-        mel_db *= scale
-        # Resize mel_db to fit the desired shape:
-        c = np.resize(mel_db, (1, 77, 768))
-    else:
-        raise NotImplementedError("Only 'waveform', 'fft', and 'melspectrogram' are implemented features")
-    frames.append(c)
-
 # Check to see if endtext is empty, if so, replace with the same text as the prompt
 if args.textpromptend == "":
     args.textpromptend = args.textprompt
@@ -324,7 +290,7 @@ for i in range(1, num_frames):
         print("ERROR: curr_num_frames == 0; skipping iteration")
         continue
     rmsarray.append(rms)
-    generate.img2img(model, np.array([prompt]), init_img_path, IMAGE_STORAGE_PATH, i - frametimes[curr_prompt], curr_num_frames, rms, args)
+    generate.img2img(model, init_img_path, IMAGE_STORAGE_PATH, i - frametimes[curr_prompt], curr_num_frames, rms, args)
 
     if i % (10 * FRAME_RATE) == 0:
         # every 10 seconds, create an in progress video

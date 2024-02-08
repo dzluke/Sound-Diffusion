@@ -244,10 +244,9 @@ def text2img(encodings, outpath, opt, titles=None):
           f" \nEnjoy.")
 
 
-def img2img(model, prompts, init_img, outpath, curr_frame, num_frames, rms, opt):
+def img2img(model, init_img, outpath, curr_frame, num_frames, rms, opt):
     """
     Generate an image using img2img
-    prompts: 4 dim np array of shape (N, 1, 77, 768)
     init_img: path to image
     outpath: path to save to (type: str)
     """
@@ -284,7 +283,6 @@ def img2img(model, prompts, init_img, outpath, curr_frame, num_frames, rms, opt)
     print(f"target t_enc is {t_enc} steps")
 
     # put encodings on device
-    prompts = torch.from_numpy(prompts).to(device)
 
     precision_scope = autocast if opt.precision == "autocast" else nullcontext
     if device.type == 'mps':
@@ -294,46 +292,45 @@ def img2img(model, prompts, init_img, outpath, curr_frame, num_frames, rms, opt)
             with model.ema_scope():
                 tic = time.time()
                 for n in trange(opt.n_iter, desc="Sampling"):
-                    for i in range(prompts.shape[0]):
-                        # Add the text prompt to the data, scaling to --textstrength
-                        # Linearly traverse through the text encoding from two different text prompts.
+                    # Add the text prompt to the data, scaling to --textstrength
+                    # Linearly traverse through the text encoding from two different text prompts.
 
-                        #TODO @David can you change these vars to snake case?
-                        textdatainit = model.get_learned_conditioning(opt.textprompt).cpu()
-                        textdatafinal = model.get_learned_conditioning(opt.textpromptend).cpu()
-                        currenttextdata = torch.lerp(textdatainit, textdatafinal, curr_frame/num_frames)
-                        currenttextdata = currenttextdata.to(device)
+                    #TODO @David can you change these vars to snake case?
+                    textdatainit = model.get_learned_conditioning(opt.textprompt).cpu()
+                    textdatafinal = model.get_learned_conditioning(opt.textpromptend).cpu()
+                    currenttextdata = torch.lerp(textdatainit, textdatafinal, curr_frame/num_frames)
+                    currenttextdata = currenttextdata.to(device)
 
-                        c = currenttextdata
+                    c = currenttextdata
 
-                        uc = None
-                        if opt.scale != 1.0:
-                            uc = model.get_learned_conditioning(batch_size * [""])
+                    uc = None
+                    if opt.scale != 1.0:
+                        uc = model.get_learned_conditioning(batch_size * [""])
 
-                        # encode (scaled latent)
-                        z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc] * batch_size).to(device))
+                    # encode (scaled latent)
+                    z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc] * batch_size).to(device))
 
-                        # network bending
-                        delta = 0.8
-                        # add a matrix full of RMS
-                        z_enc += torch.ones_like(z_enc) * rms * delta
+                    # network bending
+                    delta = 0.8
+                    # add a matrix full of RMS
+                    z_enc += torch.ones_like(z_enc) * rms * delta
 
-                        # add a matrix made of random samples from a normal gaussian
-                        # z_enc += torch.normal(torch.zeros_like(z_enc), torch.ones_like(z_enc)) * rms * delta
+                    # add a matrix made of random samples from a normal gaussian
+                    # z_enc += torch.normal(torch.zeros_like(z_enc), torch.ones_like(z_enc)) * rms * delta
 
-                        # decode it
-                        samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=opt.scale,
-                                                 unconditional_conditioning=uc,)
+                    # decode it
+                    samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=opt.scale,
+                                             unconditional_conditioning=uc,)
 
-                        x_samples = model.decode_first_stage(samples)
-                        x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
+                    x_samples = model.decode_first_stage(samples)
+                    x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
 
-                        if not opt.skip_save:
-                            for x_sample in x_samples:
-                                x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                                Image.fromarray(x_sample.astype(np.uint8)).save(
-                                    os.path.join(outpath, f"{base_count:05}.png"))
-                                base_count += 1
+                    if not opt.skip_save:
+                        for x_sample in x_samples:
+                            x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
+                            Image.fromarray(x_sample.astype(np.uint8)).save(
+                                os.path.join(outpath, f"{base_count:05}.png"))
+                            base_count += 1
                 toc = time.time()
 
     print(f"Your samples are ready and waiting for you here: \n{outpath} \n"
