@@ -17,7 +17,9 @@ SAMPLING_RATE = 44100
 ENCODING_DIMENSION = (77, 768)
 
 IMAGE_STORAGE_PATH = Path("./image_outputs")
-OUTPUT_VIDEO_PATH = Path("./output.mp4")
+OUTPUT_VIDEO_PATH = Path("./video_outputs")
+OUTPUT_VIDEO_PATH.mkdir(exist_ok=True)
+
 
 def find_desceriptors(audio):
     # Calculate the amplitude
@@ -223,7 +225,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 FRAME_RATE = args.fps
-AUDIO_PATH = args.path
+AUDIO_PATH = Path(args.path)
 INIT_IMG = args.init_img
 
 # Load prompts from file if specified
