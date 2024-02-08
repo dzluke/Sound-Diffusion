@@ -20,7 +20,6 @@ IMAGE_STORAGE_PATH = Path("./image_outputs")
 OUTPUT_VIDEO_PATH = Path("./video_outputs")
 OUTPUT_VIDEO_PATH.mkdir(exist_ok=True)
 
-
 def find_desceriptors(audio):
     # Calculate the amplitude
     # Compute the RMS value
@@ -337,12 +336,16 @@ for i in range(1, num_frames):
                           "-vcodec", "libx264",
                           # "-acodec", "copy",
                           "-pix_fmt", "yuv420p",
-                          str(OUTPUT_VIDEO_PATH)]
+                          "in_progress.mp4"]
         run(ffmpeg_command)
 
 
+video_name = OUTPUT_VIDEO_PATH / "{}_{}_{}_{}fps.mp4".format(AUDIO_PATH.stem, args.strength, args.textstrength, FRAME_RATE)
+counter = 1
+while video_name.exists():
+    video_name = OUTPUT_VIDEO_PATH / "{}_{}_{}_{}fps{}.mp4".format(AUDIO_PATH.stem, args.strength, args.textstrength, FRAME_RATE, counter)
+    counter += 1
 
-print(rmsarray)
 # turn images into video
 ffmpeg_command = ["ffmpeg",
                   "-y",  # automatically overwrite if output exists
@@ -352,7 +355,7 @@ ffmpeg_command = ["ffmpeg",
                   "-vcodec", "libx264",
                   # "-acodec", "copy",
                   "-pix_fmt", "yuv420p",
-                  str(OUTPUT_VIDEO_PATH)]
+                  str(video_name)]
 run(ffmpeg_command)
 
 print(">>> Generated {} images".format(num_frames))
@@ -360,9 +363,9 @@ print(">>> Took", util.time_string(time.time() - tic))
 print(">>> Avg time per frame: ", util.time_string((time.time() - tic) / num_frames))
 
 # store an extra copy just in case
-VIDEO_OUTPUT_FOLDER = Path("./video_outputs")
-num_videos = len(list(VIDEO_OUTPUT_FOLDER.iterdir()))
-filename = "output{}.mp4".format(num_videos)
-shutil.copy(OUTPUT_VIDEO_PATH, VIDEO_OUTPUT_FOLDER / filename)
+# VIDEO_OUTPUT_FOLDER = Path("./video_outputs")
+# num_videos = len(list(VIDEO_OUTPUT_FOLDER.iterdir()))
+# filename = "output{}.mp4".format(num_videos)
+# shutil.copy(OUTPUT_VIDEO_PATH, VIDEO_OUTPUT_FOLDER / filename)
 
 print("Done.")
