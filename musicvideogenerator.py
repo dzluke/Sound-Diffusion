@@ -263,7 +263,7 @@ print(">>> Using img2img")
 
 # generate first frame
 c = model.get_learned_conditioning(prompts[0])
-generate.text2img(np.array([c.cpu()]), IMAGE_STORAGE_PATH, args)
+generate.text2img(c.unsqueeze(0), IMAGE_STORAGE_PATH, args)
 
 curr_prompt = 0
 next_prompt = 1

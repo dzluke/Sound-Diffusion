@@ -146,16 +146,6 @@ def text2img(encodings, outpath, opt, titles=None):
 
     batch_size = opt.n_samples
     n_rows = opt.n_rows if opt.n_rows > 0 else batch_size
-    if not opt.from_file:
-        prompt = opt.prompt
-        assert prompt is not None
-        data = [batch_size * [prompt]]
-
-    else:
-        print(f"reading prompts from {opt.from_file}")
-        with open(opt.from_file, "r") as f:
-            data = f.read().splitlines()
-            data = list(chunk(data, batch_size))
 
     os.makedirs(outpath, exist_ok=True)
     base_count = len(os.listdir(outpath))
@@ -168,7 +158,7 @@ def text2img(encodings, outpath, opt, titles=None):
         ).to(torch.device(device))
 
     # put encodings on device
-    encodings = torch.from_numpy(np.array(encodings)).to(device)
+    encodings = encodings.to(device)
 
     precision_scope = autocast if opt.precision=="autocast" else nullcontext
     if device.type == 'mps':
@@ -180,14 +170,7 @@ def text2img(encodings, outpath, opt, titles=None):
                 all_samples = list()
                 for n in trange(opt.n_iter, desc="Sampling"):
                     for i in range(encodings.shape[0]):  # for each encoding provided, generate an image
-                        # Add the text prompt to the data, scaling to --textstrength
-                        # Linearly traverse through the text encoding from two different text prompts.
-                        textdatainit = model.get_learned_conditioning(opt.textprompt).cpu()
-                        textdatafinal = model.get_learned_conditioning(opt.textpromptend).cpu()
-                        currenttextdata = torch.lerp(textdatainit, textdatafinal, curr_frame/num_frames)
-                        currenttextdata = currenttextdata.to(device)
-                        
-                        c = currenttextdata # this uses no audio information
+                        c = encodings[i]
                         uc = None
                         if opt.scale != 1.0:
                             uc = model.get_learned_conditioning(batch_size * [""])
